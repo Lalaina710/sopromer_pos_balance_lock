@@ -24,6 +24,23 @@ class PosSession(models.Model):
              "pour le manager afin de detecter une eventuelle modification "
              "manuelle du solde d'ouverture.",
     )
+    is_pos_manager = fields.Boolean(
+        string="Est manager POS",
+        compute='_compute_is_pos_manager',
+        store=False,
+        help="True si l'utilisateur courant appartient au groupe "
+             "point_of_sale.group_pos_manager. Champ technique utilise "
+             "dans la vue pour gerer le readonly du solde d'ouverture "
+             "(remplace l'appel user_has_groups invalide en attribut XML).",
+    )
+
+    @api.depends_context('uid')
+    def _compute_is_pos_manager(self):
+        """Indique si l'utilisateur courant est manager POS.
+        Utilise pour griser cash_register_balance_start dans la vue."""
+        is_mgr = self.env.user.has_group('point_of_sale.group_pos_manager')
+        for rec in self:
+            rec.is_pos_manager = is_mgr
 
     @api.depends('config_id', 'state')
     def _compute_cash_balance_auto_proposed(self):

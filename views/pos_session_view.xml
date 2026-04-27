@@ -11,17 +11,20 @@
         <field name="inherit_id" ref="point_of_sale.view_pos_session_form"/>
         <field name="arch" type="xml">
 
+            <!-- Champs techniques invisibles pour gerer le readonly cote vue -->
+            <xpath expr="//field[@name='cash_register_balance_start']" position="before">
+                <field name="is_pos_manager" invisible="1"/>
+                <field name="cash_balance_auto_proposed" invisible="1"/>
+            </xpath>
+
             <!-- Griser cash_register_balance_start pour les caissiers -->
             <xpath expr="//field[@name='cash_register_balance_start']" position="attributes">
-                <attribute name="readonly">not user_has_groups('point_of_sale.group_pos_manager')</attribute>
+                <attribute name="readonly">not is_pos_manager</attribute>
                 <attribute name="help">Calcule automatiquement depuis la session precedente fermee. Modifiable uniquement par les managers en cas d'exception (versement weekend, vol, ajustement) avec justification dans 'Raison override'.</attribute>
             </xpath>
 
-            <!-- Ajouter le solde auto-propose et la raison override apres balance_start -->
+            <!-- Ajouter la raison override apres balance_start -->
             <xpath expr="//field[@name='cash_register_balance_start']" position="after">
-                <field name="cash_balance_auto_proposed"
-                       readonly="1"
-                       groups="point_of_sale.group_pos_manager"/>
                 <field name="cash_balance_override_reason"
                        placeholder="Ex: versement weekend, vol, ajustement..."
                        groups="point_of_sale.group_pos_manager"
