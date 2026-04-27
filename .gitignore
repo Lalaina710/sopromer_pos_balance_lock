@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.eggs/
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Odoo
+*.log
+*.pot~
+
+# OS
+Thumbs.db
+desktop.ini
+
+# Backups
+*.bak
+*.tmp

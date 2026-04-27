@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Copyright 2026 SOPROMER
+    License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl).
+-->
+<odoo>
+
+    <record id="view_pos_session_form_inherit_balance_lock" model="ir.ui.view">
+        <field name="name">pos.session.form.inherit.balance.lock</field>
+        <field name="model">pos.session</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_session_form"/>
+        <field name="arch" type="xml">
+
+            <!-- Griser cash_register_balance_start pour les caissiers -->
+            <xpath expr="//field[@name='cash_register_balance_start']" position="attributes">
+                <attribute name="readonly">not user_has_groups('point_of_sale.group_pos_manager')</attribute>
+                <attribute name="help">Calcule automatiquement depuis la session precedente fermee. Modifiable uniquement par les managers en cas d'exception (versement weekend, vol, ajustement) avec justification dans 'Raison override'.</attribute>
+            </xpath>
+
+            <!-- Ajouter le solde auto-propose et la raison override apres balance_start -->
+            <xpath expr="//field[@name='cash_register_balance_start']" position="after">
+                <field name="cash_balance_auto_proposed"
+                       readonly="1"
+                       groups="point_of_sale.group_pos_manager"/>
+                <field name="cash_balance_override_reason"
+                       placeholder="Ex: versement weekend, vol, ajustement..."
+                       groups="point_of_sale.group_pos_manager"
+                       invisible="cash_register_balance_start == cash_balance_auto_proposed"/>
+            </xpath>
+
+        </field>
+    </record>
+
+</odoo>
