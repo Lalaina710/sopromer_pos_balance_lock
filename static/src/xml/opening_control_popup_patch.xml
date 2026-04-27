@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Copyright 2026 SOPROMER
+    License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl).
+
+    Override du template OpeningControlPopup natif Odoo 18 pour griser
+    l'input "Espèces à l'ouverture" et désactiver le bouton money detail
+    quand l'utilisateur n'est pas manager POS.
+
+    Stratégie : remplacer le bloc complet du composant <Input> custom POS
+    (qui n'expose pas de prop "readonly" natif) par un <input> HTML simple
+    en lecture seule lorsque isOpeningCashReadonly est vrai. Le manager
+    conserve l'expérience native intégrale (Input + bouton money detail).
+-->
+<templates id="template" xml:space="preserve">
+
+    <t t-inherit="point_of_sale.OpeningControlPopup" t-inherit-mode="extension" owl="1">
+
+        <!-- Remplacer le bloc cash-input-sub-section pour gérer les 2 modes -->
+        <xpath expr="//div[hasclass('cash-input-sub-section')]" position="replace">
+
+            <!-- Mode caissier : input readonly, pas de bouton money detail -->
+            <div t-if="isOpeningCashReadonly"
+                 t-att-class="{ 'w-50': !ui.isSmall }"
+                 class="cash-input-sub-section d-flex gap-1 sopromer-locked-opening-cash">
+                <div class="form-control form-control-lg input-container d-flex align-items-center bg-view"
+                     style="background-color:#f0f0f0; cursor:not-allowed;">
+                    <input class="border-0 mx-2 bg-transparent"
+                           type="text"
+                           style="min-width: 60px; cursor: not-allowed;"
+                           readonly="readonly"
+                           t-att-value="state.openingCash"
+                           title="Solde d'ouverture verrouillé. Contactez un manager pour modifier."/>
+                </div>
+                <div class="button icon btn btn-secondary btn-lg lh-lg disabled"
+                     style="opacity:0.5; cursor:not-allowed; pointer-events:none;"
+                     title="Modification réservée aux managers POS">
+                    <i class="fa fa-lock" role="img" title="Verrouillé"/>
+                </div>
+            </div>
+
+            <!-- Mode manager : comportement natif Odoo intégral -->
+            <div t-else=""
+                 t-att-class="{ 'w-50': !ui.isSmall }"
+                 class="cash-input-sub-section d-flex gap-1">
+                <Input tModel="[state, 'openingCash']"
+                    isValid.bind="env.utils.isValidFloat"
+                    callback.bind="handleInputChange"
+                    autofocus="true"
+                    placeholder.translate="Opening Balance Eg: 123"/>
+                <div class="button icon btn btn-secondary btn-lg lh-lg" t-on-click="openDetailsPopup">
+                    <i class="fa fa-money" role="img" title="Open the money details popup"/>
+                </div>
+            </div>
+
+        </xpath>
+
+    </t>
+
+</templates>

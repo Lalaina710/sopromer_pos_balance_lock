@@ -3,7 +3,7 @@
 # License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl).
 {
     'name': 'SOPROMER - Verrou Fond de Caisse POS',
-    'version': '18.0.1.0.1',
+    'version': '18.0.1.0.2',
     'category': 'Point of Sale',
     'summary': 'Verrouille le solde initial POS pour caissiers, override manager',
     'description': """
@@ -16,7 +16,8 @@ de saisie a l'ouverture (ex: oubli, sous-comptage).
 
 Fonctionnalites
 ---------------
-* Champ "Solde initial" en lecture seule pour les caissiers
+* Champ "Solde initial" en lecture seule pour les caissiers (backend ET
+  frontend POS - popup "Controle a l'ouverture")
 * Champ editable uniquement pour les managers (group_pos_manager)
 * Pre-remplissage automatique a la creation de session avec le solde de
   cloture reel (cash_register_balance_end_real) de la derniere session
@@ -24,6 +25,8 @@ Fonctionnalites
 * Champ "Raison override" obligatoire si le manager modifie le solde propose
   (tracabilite : versement weekend, vol, ajustement, etc.)
 * Affichage du solde auto-propose pour les managers a titre de reference
+* Patch OWL frontend de la popup OpeningControlPopup pour griser l'input
+  "Especes a l'ouverture" cote interface caissier (https://.../pos/ui)
 
 Cas d'usage business
 --------------------
@@ -40,6 +43,12 @@ caissiers, tout en laissant la souplesse aux managers en cas d'exception.
     'data': [
         'views/pos_session_view.xml',
     ],
+    'assets': {
+        'point_of_sale._assets_pos': [
+            'sopromer_pos_balance_lock/static/src/js/opening_control_popup_patch.js',
+            'sopromer_pos_balance_lock/static/src/xml/opening_control_popup_patch.xml',
+        ],
+    },
     'installable': True,
     'application': False,
     'auto_install': False,
