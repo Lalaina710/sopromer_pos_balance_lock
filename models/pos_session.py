@@ -37,8 +37,15 @@ class PosSession(models.Model):
     @api.depends_context('uid')
     def _compute_is_pos_manager(self):
         """Indique si l'utilisateur courant est manager POS.
-        Utilise pour griser cash_register_balance_start dans la vue."""
-        is_mgr = self.env.user.has_group('point_of_sale.group_pos_manager')
+        Utilise pour griser cash_register_balance_start dans la vue.
+        Les administrateurs systeme (base.group_system) sont aussi
+        consideres comme managers POS (politique SOPROMER : admin a
+        toujours la main sur l'ouverture et les mouvements de caisse).
+        """
+        is_mgr = (
+            self.env.user.has_group('point_of_sale.group_pos_manager')
+            or self.env.user.has_group('base.group_system')
+        )
         for rec in self:
             rec.is_pos_manager = is_mgr
 

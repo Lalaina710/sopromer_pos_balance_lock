@@ -43,12 +43,53 @@ docker restart odoo-dev
 
 ## Caractéristiques techniques
 
-- **Version** : 18.0.1.0.0
+- **Version** : 18.0.1.1.2
 - **Catégorie** : Point of Sale
 - **License** : LGPL-3
 - **Dépendances** : `point_of_sale` (autonome)
-- **Modèles modifiés** : `pos.session` (héritage `_inherit`)
-- **Frontend POS** : aucun impact (modification backend uniquement)
+- **Modèles modifiés** : `pos.session`, `res.users` (héritage `_inherit`)
+- **Frontend POS** : patch OWL `OpeningControlPopup` (asset `_assets_pos`)
+
+## Historique
+
+### 18.0.1.1.2 - 2026-05-01
+
+- Frontend POS : `isPosManager` lit `pos.user._role` avec **fallback
+  `pos.user.raw.role`** (timing : `_role` peut être undefined à l'init du
+  popup, alors que `raw.role` vient du backend `_load_pos_data`)
+- Fix robustesse : popup ne reste plus en mode caissier verrouillé pour
+  les managers/admins par défaut
+
+### 18.0.1.1.1 - 2026-05-01
+
+- Ajout `console.warn` debug temporaire dans `isPosManager` getter pour
+  diagnostiquer pourquoi `_role === 'manager'` retournait false côté admin
+
+### 18.0.1.1.0 - 2026-05-01
+
+- Override `res.users._load_pos_data` : force `role='manager'` pour les
+  utilisateurs avec `base.group_system` (admin Odoo)
+- Backend `is_pos_manager` aussi True pour `base.group_system`
+- **Politique SOPROMER** : un admin doit toujours pouvoir éditer le solde
+  d'ouverture et faire des Cash In, même sans `group_pos_manager` explicite
+  → cohérent avec `sopromer_pos_cash_print` (Cash In réservé managers)
+
+### 18.0.1.0.2 - 2026-04-27
+
+- Patch OWL `OpeningControlPopup` : grise input "Espèces à l'ouverture"
+  côté frontend POS pour caissiers (le verrouillage backend seul ne suffit
+  pas si l'UI POS reste éditable)
+
+### 18.0.1.0.1 - 2026-04-27
+
+- Champ computed `is_pos_manager` (avec `@api.depends_context('uid')`) pour
+  utilisation dans `readonly` XML view (remplace `user_has_groups()` invalide
+  comme attribut XML)
+
+### 18.0.1.0.0 - 2026-04-27
+
+- Version initiale : pré-remplissage `balance_start` depuis J-1, override
+  manager avec raison, champ `cash_balance_auto_proposed` (référence visuelle)
 
 ## Auteur
 

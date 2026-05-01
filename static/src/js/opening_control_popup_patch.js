@@ -20,10 +20,18 @@ patch(OpeningControlPopup.prototype, {
     /**
      * Indique si l'utilisateur courant est manager POS.
      * Utilise le rôle pré-calculé natif Odoo (cf. res_users.py _load_pos_data).
+     * Fallback : si pos.user manquant ou rôle absent, on log et on traite
+     * comme caissier (verrouillé) — diagnostic via console pour les cas
+     * où le user POS n'est pas correctement chargé en frontend.
      * @returns {boolean}
      */
     get isPosManager() {
-        return this.pos?.user?._role === "manager";
+        // _role est pose par pos_store.js mais peut etre undefined a l'init
+        // du popup (timing). Fallback sur raw.role qui vient direct du
+        // backend _load_pos_data (toujours defini).
+        const user = this.pos?.user;
+        const role = user?._role || user?.raw?.role;
+        return role === "manager";
     },
 
     /**
