@@ -2,7 +2,8 @@
 # Copyright 2026 SOPROMER
 # License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl).
 
-from odoo import api, fields, models
+from odoo import _, api, fields, models
+from odoo.exceptions import UserError
 
 
 class PosSession(models.Model):
@@ -66,6 +67,66 @@ class PosSession(models.Model):
             session.cash_balance_auto_proposed = (
                 previous.cash_register_balance_end_real if previous else 0.0
             )
+
+    def get_current_cash_balance(self):
+        """Calcule et retourne le solde caisse courant de la session.
+
+        Formule :
+            solde = cash_register_balance_start
+                    + sum(cash payments encaissés cette session)
+                    + sum(cash ins déjà effectués)
+                    - sum(cash outs déjà effectués)
+
+        Les cash ins/outs sont stockés dans statement_line_ids (positif=in,
+        négatif=out). Les cash payments sont dans pos.payment filtré sur
+        la méthode de paiement de type cash.
+
+        Règle sécurité : accessible uniquement aux utilisateurs POS
+        (group_pos_user suffit, la session leur appartient).
+
+        Returns:
+            float : solde caisse courant
+        """
+        self.ensure_one()
+        cash_pm = self.payment_method_ids.filtered('is_cash_count')[:1]
+        if not cash_pm:
+            return 0.0
+
+        # Paiements cash encaissés dans les commandes de la session
+        domain = [
+            ('session_id', '=', self.id),
+            ('payment_method_id', '=', cash_pm.id),
+        ]
+        result = self.env['pos.payment']._read_group(domain, aggregates=['amount:sum'])
+        total_cash_payments = result[0][0] or 0.0
+
+        # Cash ins/outs déjà enregistrés (statement_line_ids : positif=in, négatif=out)
+        total_cash_moves = sum(self.sudo().statement_line_ids.mapped('amount'))
+
+        return self.cash_register_balance_start + total_cash_payments + total_cash_moves
+
+    def try_cash_in_out(self, _type, amount, reason, extras):
+        """Override backend : bloque tout Cash Out dont le montant absolu
+        depasse le solde caisse courant. Securite dure (pas de manager
+        override). Independante des patches frontend (robuste meme si un
+        autre module ecrase CashMovePopup.confirm sans super()).
+        """
+        if _type == 'out':
+            try:
+                requested = abs(float(amount or 0.0))
+            except (TypeError, ValueError):
+                requested = 0.0
+            if requested > 0:
+                for session in self:
+                    balance = session.get_current_cash_balance()
+                    if requested > balance:
+                        raise UserError(_(
+                            "Cash Out refuse : montant retire (%(amount)s) "
+                            "depasse le solde caisse courant (%(balance)s).",
+                            amount=session.currency_id.format(requested),
+                            balance=session.currency_id.format(balance),
+                        ))
+        return super().try_cash_in_out(_type, amount, reason, extras)
 
     @api.model_create_multi
     def create(self, vals_list):

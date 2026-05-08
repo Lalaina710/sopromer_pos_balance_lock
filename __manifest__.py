@@ -3,9 +3,9 @@
 # License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl).
 {
     'name': 'SOPROMER - Verrou Fond de Caisse POS',
-    'version': '18.0.1.1.2',
+    'version': '18.0.1.2.0',
     'category': 'Point of Sale',
-    'summary': 'Verrouille le solde initial POS pour caissiers, override manager',
+    'summary': 'Verrouille le solde initial POS pour caissiers + limite Cash Out au solde courant',
     'description': """
 SOPROMER - Verrou Fond de Caisse POS
 =====================================
@@ -27,12 +27,17 @@ Fonctionnalites
 * Affichage du solde auto-propose pour les managers a titre de reference
 * Patch OWL frontend de la popup OpeningControlPopup pour griser l'input
   "Especes a l'ouverture" cote interface caissier (https://.../pos/ui)
+* [v1.2.0] Limite Cash Out au solde caisse courant (securite dure, aucun
+  override manager) — bloque si montant retire > solde disponible avec
+  popup d'erreur explicite
 
 Cas d'usage business
 --------------------
 Reduit le risque d'erreurs recurrentes type POS/00204 (oubli) et POS/00541
 (sous-comptage) en fermant la possibilite d'editer manuellement par les
 caissiers, tout en laissant la souplesse aux managers en cas d'exception.
+Empeche egalement les retraits caisse excessifs qui mettraient le solde
+en negatif.
     """,
     'author': 'SOPROMER',
     'website': 'https://github.com/Lalaina710/sopromer_pos_balance_lock',
@@ -47,6 +52,7 @@ caissiers, tout en laissant la souplesse aux managers en cas d'exception.
         'point_of_sale._assets_pos': [
             'sopromer_pos_balance_lock/static/src/js/opening_control_popup_patch.js',
             'sopromer_pos_balance_lock/static/src/xml/opening_control_popup_patch.xml',
+            'sopromer_pos_balance_lock/static/src/js/cashout_limit.js',
         ],
     },
     'installable': True,

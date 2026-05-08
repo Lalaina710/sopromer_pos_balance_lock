@@ -1,6 +1,6 @@
 # SOPROMER - Verrou Fond de Caisse POS
 
-Module Odoo 18 verrouillant le champ **Solde initial** (`cash_register_balance_start`) des sessions POS pour les caissiers, avec override manager justifié.
+Module Odoo 18 verrouillant le champ **Solde initial** (`cash_register_balance_start`) des sessions POS pour les caissiers, avec override manager justifié. Limite également les Cash Out au solde caisse courant (sécurité dure).
 
 ## Contexte
 
@@ -12,16 +12,33 @@ Le pré-remplissage automatique avec le solde de clôture J-1 ferme une source d
 
 ## Comportement
 
-| Acteur | Solde initial | Solde auto proposé | Raison override |
-|--------|--------------|--------------------|-----------------| 
-| Caissier (`group_pos_user`) | **Lecture seule** | Caché | Caché |
-| Manager (`group_pos_manager`) | Editable | Visible (référence) | Visible si valeur modifiée |
+| Acteur | Solde initial | Solde auto proposé | Raison override | Cash Out > solde |
+|--------|--------------|--------------------|-----------------|-----------------| 
+| Caissier (`group_pos_user`) | **Lecture seule** | Caché | Caché | **Bloqué** |
+| Manager (`group_pos_manager`) | Editable | Visible (référence) | Visible si valeur modifiée | **Bloqué** |
 
 ### Pré-remplissage automatique
 À la création d'une nouvelle session POS, le `cash_register_balance_start` est rempli automatiquement avec le `cash_register_balance_end_real` de la dernière session fermée du même point de vente. Si aucune session précédente fermée, valeur par défaut 0.
 
 ### Override manager
 Si un manager modifie manuellement le solde initial (cas exceptionnels : versement weekend, vol, ajustement), le champ **Raison override** apparaît automatiquement et invite à justifier la modification (traçable via `mail.thread` grâce à `tracking=True`).
+
+### Limite Cash Out au solde courant (v1.2.0)
+
+Lors d'un Cash Out, le montant est comparé au **solde caisse courant** avant validation :
+
+```
+solde_courant = cash_register_balance_start
+              + sum(paiements cash encaissés cette session)
+              + sum(cash ins effectués)
+              - sum(cash outs déjà effectués)
+```
+
+Si `montant_retiré > solde_courant` → popup d'erreur "Montant retiré (X) dépasse le solde caisse courant (Y)" et la transaction est annulée.
+
+**Règle dure** : aucun override manager possible. Caissiers et managers ont le même comportement.
+
+Cash In n'est jamais bloqué.
 
 ## Installation
 
@@ -43,14 +60,23 @@ docker restart odoo-dev
 
 ## Caractéristiques techniques
 
-- **Version** : 18.0.1.1.2
+- **Version** : 18.0.1.2.0
 - **Catégorie** : Point of Sale
 - **License** : LGPL-3
 - **Dépendances** : `point_of_sale` (autonome)
 - **Modèles modifiés** : `pos.session`, `res.users` (héritage `_inherit`)
-- **Frontend POS** : patch OWL `OpeningControlPopup` (asset `_assets_pos`)
+- **Frontend POS** : patch OWL `OpeningControlPopup` + `CashMovePopup` (asset `_assets_pos`)
+- **Méthode backend** : `pos.session.get_current_cash_balance()` — calcule solde temps réel
 
 ## Historique
+
+### 18.0.1.2.0 - 2026-05-08
+
+- Nouvelle règle sécurité dure : Cash Out bloqué si montant > solde caisse courant
+- Méthode backend `get_current_cash_balance()` sur `pos.session` (calcul temps réel)
+- Patch OWL `CashMovePopup.confirm()` : contrôle avant appel `try_cash_in_out`
+- Cash In jamais bloqué, manager même règle que caissier (sécurité dure)
+- Popup `AlertDialog` avec montants formatés (symbole monnaie Odoo)
 
 ### 18.0.1.1.2 - 2026-05-01
 
